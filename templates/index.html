@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Growth For Impact | Enterprise AI Resume Screening</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="glow-bg"></div>
+    <div class="container" style="max-width: 950px;">
+        <header class="header">
+            <div class="badge">🌱 Growth For Impact (GFI) Engine</div>
+            <h1>Enterprise AI Candidate Screening</h1>
+            <p>Evaluate individual candidates or run bulk semantic ranking across repository resumes instantly.</p>
+        </header>
+
+        <main class="main-card">
+            <!-- Bulk Evaluation Dashboard Box -->
+            <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); padding: 1.5rem; border-radius: 14px; margin-bottom: 2rem; text-align: center;">
+                <h3 style="color: #34d399; margin-bottom: 0.5rem; font-size: 1.1rem;">📊 Bulk Batch Recruiter Dashboard</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Analyze and rank top candidate resumes simultaneously.</p>
+                <form action="/" method="POST">
+                    <input type="hidden" name="action" value="bulk_evaluate">
+                    <button type="submit" class="btn-primary" style="padding: 0.75rem 1.5rem; font-size: 0.95rem; display: inline-block; width: auto;">⚡ Evaluate Top 10 Candidates</button>
+                </form>
+            </div>
+
+            <form action="/" method="POST" enctype="multipart/form-data" class="upload-form">
+                {% if sample_files %}
+                    <div style="margin-bottom: 1.5rem;">
+                        <label for="sample_resume" style="display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem; font-weight: 600;">📁 Or Select Single Pre-loaded Resume ({{ sample_files|length }} available):</label>
+                        <select name="sample_resume" id="sample_resume" style="width: 100%; padding: 0.85rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: white; border-radius: 10px; font-size: 0.95rem; cursor: pointer;">
+                            <option value="">-- Choose single candidate file --</option>
+                            {% for file in sample_files %}
+                                <option value="{{ file }}">{{ file }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="text-align: center; color: var(--text-muted); margin-bottom: 1.25rem; font-size: 0.85rem; font-weight: 500;">— OR UPLOAD NEW —</div>
+                {% endif %}
+
+                <div class="file-drop-area">
+                    <span class="file-msg">Drag & Drop candidate resume (.pdf or .docx) or browse</span>
+                    <input type="file" name="resume" accept=".pdf,.docx" class="file-input" onchange="updateFileName(this)">
+                </div>
+                <div id="file-selected" class="file-selected"></div>
+                <button type="submit" class="btn-primary" style="margin-top: 1.25rem;">🚀 Run Single Candidate Evaluation</button>
+            </form>
+
+            {% if error %}
+                <div class="alert error">{{ error }}</div>
+            {% endif %}
+
+            <!-- BULK RESULTS TABLE -->
+            {% if bulk_results %}
+                <div class="results-section">
+                    <h3 style="margin-bottom: 1rem; color: #fff;">🏆 Top 10 Candidate Rankings</h3>
+                    <div style="max-height: 450px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 10px;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+                            <thead style="background: rgba(255,255,255,0.05); position: sticky; top: 0;">
+                                <tr>
+                                    <th style="padding: 10px; border-bottom: 1px solid var(--border-color);">Candidate File</th>
+                                    <th style="padding: 10px; border-bottom: 1px solid var(--border-color);">Recommended Role</th>
+                                    <th style="padding: 10px; border-bottom: 1px solid var(--border-color);">LCA Score</th>
+                                    <th style="padding: 10px; border-bottom: 1px solid var(--border-color);">UI/UX Score</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in bulk_results %}
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                        <td style="padding: 10px; color: #34d399; font-weight: 500;">{{ r.filename }}</td>
+                                        <td style="padding: 10px;">{{ r.recommended_role }}</td>
+                                        <td style="padding: 10px; font-weight: 700; color: #10b981;">{{ r.lca_match_score }}%</td>
+                                        <td style="padding: 10px; font-weight: 700; color: #60a5fa;">{{ r.uiux_match_score }}%</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- SINGLE RESULT VIEW -->
+            {% if result %}
+                <div class="results-section">
+                    <div class="candidate-header">
+                        <div>
+                            <h2>{{ result.candidate_name }}</h2>
+                            <p class="file-tag">📄 {{ result.filename }}</p>
+                        </div>
+                        <div class="role-badge {% if 'LCA' in result.recommended_role %}lca{% else %}uiux{% endif %}">
+                            {{ result.recommended_role }}
+                        </div>
+                    </div>
+
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <span class="metric-label">LCA Consultant Match</span>
+                            <span class="metric-value">{{ result.lca_match_score }}%</span>
+                            <div class="progress-bar"><div class="fill" style="width: {{ result.lca_match_score }}%;"></div></div>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-label">UI/UX Design Match</span>
+                            <span class="metric-value">{{ result.uiux_match_score }}%</span>
+                            <div class="progress-bar"><div class="fill ui" style="width: {{ result.uiux_match_score }}%;"></div></div>
+                        </div>
+                    </div>
+
+                    <div class="details-grid">
+                        <div class="detail-box">
+                            <h4>Contact & Tenure</h4>
+                            <p><strong>Email:</strong> {{ result.email }}</p>
+                            <p><strong>Phone:</strong> {{ result.phone }}</p>
+                            <p><strong>Estimated Experience:</strong> {{ result.estimated_years_experience }} years</p>
+                        </div>
+                        <div class="detail-box">
+                            <h4>Key Skills Identified</h4>
+                            <div class="skills-chips">
+                                {% for skill in result.key_skills %}
+                                    <span class="chip">{{ skill }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="reasoning-box">
+                        <h4>🤖 AI Evaluation Reasoning</h4>
+                        <p><strong>LCA Fit:</strong> {{ result.lca_reasoning }}</p>
+                        <p><strong>UI/UX Fit:</strong> {{ result.uiux_reasoning }}</p>
+                    </div>
+
+                    <div class="action-footer">
+                        <a href="mailto:{{ result.email }}?subject=Interview Invitation - Growth For Impact" class="btn-secondary">✉️ Dispatch Interview Invitation</a>
+                    </div>
+                </div>
+            {% endif %}
+        </main>
+        
+        <footer class="footer">
+            <p>Growth For Impact Recruiter Portal • Powered by Hybrid Semantic Scoring Engine</p>
+        </footer>
+    </div>
+
+    <script>
+        function updateFileName(input) {
+            const display = document.getElementById('file-selected');
+            if (input.files && input.files[0]) {
+                display.textContent = "Selected: " + input.files[0].name;
+                display.style.display = "block";
+            }
+        }
+    </script>
+</body>
+</html>
